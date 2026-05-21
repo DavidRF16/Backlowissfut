@@ -7,6 +7,10 @@ const {
   sendVerificationEmail,
 } = require('../utils/email')
 
+const requireEmailVerification =
+  process.env.REQUIRE_EMAIL_VERIFICATION !==
+  'false'
+
 const createVerificationToken = () => {
   const token =
     crypto.randomBytes(32).toString('hex')
@@ -80,36 +84,45 @@ const register = async (req, res) => {
     }
 
     const verification =
-      createVerificationToken()
+      requireEmailVerification
+        ? createVerificationToken()
+        : null
 
     const user = await User.create({
       username,
       email,
       password,
-      isEmailVerified: false,
+      isEmailVerified:
+        !requireEmailVerification,
       emailVerificationToken:
-        verification.hash,
+        verification?.hash || '',
       emailVerificationExpires:
-        Date.now() + 1000 * 60 * 60 * 24,
+        requireEmailVerification
+          ? Date.now() + 1000 * 60 * 60 * 24
+          : undefined,
     })
 
-    try {
-      await sendVerificationEmail({
-        email: user.email,
-        username: user.username,
-        token: verification.token,
-      })
-    } catch (error) {
-      await user.deleteOne()
+    if (requireEmailVerification) {
+      try {
+        await sendVerificationEmail({
+          email: user.email,
+          username: user.username,
+          token: verification.token,
+        })
+      } catch (error) {
+        await user.deleteOne()
 
-      return res.status(500).json({
-        message: error.message,
-      })
+        return res.status(500).json({
+          message: error.message,
+        })
+      }
     }
 
     res.status(201).json({
       message:
-        'Cuenta creada. Revisa tu correo para verificarla.',
+        requireEmailVerification
+          ? 'Cuenta creada. Revisa tu correo para verificarla.'
+          : 'Cuenta creada correctamente. Ya puedes iniciar sesion.',
     })
   } catch (error) {
     if (error.code === 11000) {

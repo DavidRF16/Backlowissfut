@@ -50,6 +50,13 @@ app.use('/api/notifications', notificationRoutes)
 app.use('/api/wishlist', wishlistRoutes)
 app.use('/api/messages', messageRoutes)
 app.use('/api/official-shirts', officialShirtRoutes)
+
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+  })
+})
+
 app.get('/', (req, res) => {
   res.json({
     message: 'LowissFut API running',
@@ -101,6 +108,10 @@ const PORT = process.env.PORT || 3000
 
 server.listen(PORT, () => {
   console.log(
-    `Server running on port ${PORT}`
+    `Server running on port ${PORT} ${
+      process.env.PORT
+        ? '(Railway PORT)'
+        : '(local fallback)'
+    }`
   )
 })
