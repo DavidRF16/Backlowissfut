@@ -18,11 +18,20 @@ const connectDB = require('./config/db')
 const app = express()
 connectDB()
 
+const configuredClientUrls = (
+  process.env.CLIENT_URLS ||
+  process.env.CLIENT_URL ||
+  ''
+)
+  .split(',')
+  .map((url) => url.trim())
+  .filter(Boolean)
+
 const clientUrls = [
-  process.env.CLIENT_URL,
+  ...configuredClientUrls,
   'http://localhost:5173',
   'http://127.0.0.1:5173',
-].filter(Boolean)
+]
 
 app.use(
   cors({
